@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spoiler Shield</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 380px;
+      min-height: 200px;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-left h1 { font-size: 16px; font-weight: 700; color: #f5c518; }
+    .header-left .logo { font-size: 22px; }
+
+    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #555;
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+
+    .toggle-slider::before {
+      content: ''; position: absolute;
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background-color: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+
+    .toggle input:checked + .toggle-slider { background-color: #f5c518; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    .toggle-sm { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+    .toggle-sm input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-sm-slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #555;
+      border-radius: 20px;
+      transition: 0.3s;
+    }
+
+    .toggle-sm-slider::before {
+      content: ''; position: absolute;
+      height: 14px; width: 14px;
+      left: 3px; bottom: 3px;
+      background-color: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+
+    .toggle-sm input:checked + .toggle-sm-slider { background-color: #f5c518; }
+    .toggle-sm input:checked + .toggle-sm-slider::before { transform: translateX(16px); }
+
+    .section {
+      padding: 12px 16px;
+      border-bottom: 1px solid #0f3460;
+    }
+
+    .section:last-child { border-bottom: none; }
+
+    .section-title {
+      font-size: 12px; font-weight: 600; color: #888;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      font-size: 11px; color: #666;
+      margin-top: 2px;
+    }
+
+    .preset {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+
+    .preset + .preset {
+      border-top: 1px solid #0f3460;
+    }
+
+    .preset-info { flex: 1; min-width: 0; padding-right: 10px; }
+
+    .preset-label {
+      font-size: 13px; font-weight: 500;
+    }
+
+    .preset-words {
+      font-size: 11px; color: #666;
+      margin-top: 4px;
+      line-height: 1.6;
+    }
+
+    .preset-words span {
+      display: inline-block;
+      background: #16213e;
+      border: 1px solid #0f3460;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin: 1px 2px;
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    .item-list { display: flex; flex-direction: column; gap: 4px; }
+
+    .item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 8px; background: #16213e;
+      border-radius: 6px; border: 1px solid #0f3460;
+    }
+
+    .item input[type="checkbox"] {
+      accent-color: #f5c518; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0;
+    }
+
+    .item-label {
+      flex: 1; min-width: 0;
+      font-size: 13px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .type-badge {
+      font-size: 10px; font-weight: 600;
+      padding: 2px 6px; border-radius: 4px;
+      text-transform: uppercase; flex-shrink: 0;
+    }
+
+    .type-badge.whole { background: #2d1b69; color: #b388ff; }
+    .type-badge.contains { background: #1b3a2d; color: #69f0ae; }
+    .type-badge.channel { background: #3a1b1b; color: #ff8a80; }
+
+    .item-delete {
+      background: none; border: none; color: #666; cursor: pointer;
+      font-size: 16px; padding: 2px 4px; border-radius: 4px;
+      transition: color 0.2s; flex-shrink: 0;
+    }
+
+    .item-delete:hover { color: #ff5252; }
+
+    .add-row {
+      display: flex; gap: 6px;
+      margin-top: 8px;
+    }
+
+    .add-row input {
+      flex: 1; min-width: 0;
+      padding: 7px 10px;
+      background: #16213e; border: 1px solid #0f3460;
+      border-radius: 6px; color: #e0e0e0;
+      font-size: 12px; outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .add-row input:focus { border-color: #f5c518; }
+    .add-row input::placeholder { color: #555; }
+
+    .add-row select {
+      padding: 7px 6px;
+      background: #16213e; border: 1px solid #0f3460;
+      border-radius: 6px; color: #e0e0e0;
+      font-size: 11px; outline: none; cursor: pointer;
+    }
+
+    .add-row select:focus { border-color: #f5c518; }
+
+    .btn-add {
+      padding: 7px 14px;
+      background: #f5c518; color: #1a1a2e;
+      border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-add:hover { background: #e0b415; }
+
+    .empty-state { text-align: center; padding: 12px; color: #555; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <span class="logo">&#x1F6E1;</span>
+      <h1>Spoiler Shield</h1>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="masterToggle" checked>
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <!-- Presets -->
+  <div class="section">
+    <div class="section-title">Built-in Protection</div>
+
+    <div class="preset">
+      <div class="preset-info">
+        <div class="preset-label">Score Protection</div>
+        <div class="section-desc">Catches score patterns like 3-1, 4:0, 2 - 1</div>
+      </div>
+      <label class="toggle-sm">
+        <input type="checkbox" id="presetScores" checked>
+        <span class="toggle-sm-slider"></span>
+      </label>
+    </div>
+
+    <div class="preset">
+      <div class="preset-info">
+        <div class="preset-label">Spoiler Words</div>
+        <div class="preset-words" id="presetWordsList"></div>
+      </div>
+      <label class="toggle-sm">
+        <input type="checkbox" id="presetKeywords" checked>
+        <span class="toggle-sm-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- My Keywords -->
+  <div class="section">
+    <div class="section-title">My Keywords</div>
+    <div class="item-list" id="keywordsList"></div>
+    <div class="add-row">
+      <input type="text" id="kwInput" placeholder="Enter a keyword...">
+      <select id="kwType">
+        <option value="whole">Exact</option>
+        <option value="contains">Contains</option>
+      </select>
+      <button class="btn-add" id="btnAddKw">Add</button>
+    </div>
+  </div>
+
+  <!-- Blocked Channels -->
+  <div class="section">
+    <div class="section-title">Blocked Channels</div>
+    <div class="item-list" id="channelsList"></div>
+    <div class="add-row">
+      <input type="text" id="chInput" placeholder="Enter channel name...">
+      <button class="btn-add" id="btnAddCh">Add</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

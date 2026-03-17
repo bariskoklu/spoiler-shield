@@ -1,0 +1,116 @@
+/* Spoiler Shield — Overlay Styles */
+
+/* Hidden renderer: all children invisible */
+.ss-hidden {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.ss-hidden > *:not(.ss-overlay) {
+  visibility: hidden !important;
+}
+
+/* Overlay: covers the entire renderer */
+.ss-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 100 !important;
+  background: #1a1a2e !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  font-family: 'YouTube Sans', 'Roboto', Arial, sans-serif !important;
+  border-radius: 12px !important;
+  border: 1px solid #2a2a4a !important;
+  padding: 16px !important;
+  visibility: visible !important;
+}
+
+/* Shield title */
+.ss-overlay-shield {
+  color: #f5c518;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Censored title */
+.ss-overlay-censored {
+  color: #999;
+  font-size: 13px;
+  text-align: center;
+  max-width: 90%;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Channel + date info */
+.ss-overlay-info {
+  color: #777;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Show/Hide button */
+.ss-overlay-btn {
+  background: #f5c518 !important;
+  color: #1a1a2e !important;
+  border: none !important;
+  padding: 6px 20px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  margin-top: 4px !important;
+  font-family: 'YouTube Sans', 'Roboto', Arial, sans-serif !important;
+  transition: background 0.2s ease !important;
+}
+
+.ss-overlay-btn:hover {
+  background: #e0b415 !important;
+}
+
+/* Revealed state: overlay hidden, content visible */
+.ss-overlay.ss-overlay-revealed {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.ss-hidden.ss-revealed > *:not(.ss-overlay) {
+  visibility: visible !important;
+}
+
+/* Re-hide button: shown at bottom-right when revealed */
+.ss-rehide-btn {
+  position: absolute !important;
+  bottom: 4px !important;
+  right: 4px !important;
+  z-index: 101 !important;
+  background: rgba(26, 26, 46, 0.85) !important;
+  color: #f5c518 !important;
+  border: 1px solid #f5c518 !important;
+  padding: 3px 10px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: 'YouTube Sans', 'Roboto', Arial, sans-serif !important;
+  transition: background 0.2s ease !important;
+  visibility: visible !important;
+}
+
+.ss-rehide-btn:hover {
+  background: rgba(26, 26, 46, 1) !important;
+}
+
+/* Re-hide button only visible when revealed */
+.ss-hidden:not(.ss-revealed) .ss-rehide-btn {
+  display: none !important;
+}
