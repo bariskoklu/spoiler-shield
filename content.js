@@ -24,9 +24,7 @@
   const SPOILER_WORDS = [
     'wins', 'loses', 'winner', 'loser', 'eliminated', 'champion',
     'defeated', 'victory', 'clutch', 'final score', 'playoff',
-    'semifinals', 'finals',
-    'kazand\u0131', 'kaybetti', '\u015fampiyon', 'elendi', 'finale kald\u0131',
-    'yenildi', 'galip'
+    'semifinals', 'finals'
   ];
 
   // ─── State ───
@@ -122,9 +120,10 @@
       return;
     }
 
-    // On watch pages, also scan sidebar lockup view models
+    // On watch pages, sidebar uses yt-lockup-view-model exclusively
     const isWatch = location.pathname === '/watch';
-    const selector = isWatch ? RENDERERS + ', ' + SIDEBAR_RENDERER : RENDERERS;
+    const selector = isWatch ? SIDEBAR_RENDERER : RENDERERS;
+    const pageChannelName = getPageChannelName();
     const renderers = document.querySelectorAll(selector);
     let count = 0;
 
@@ -132,7 +131,7 @@
       if (processed.has(renderer)) return;
 
       const title = getTitle(renderer);
-      const channel = getChannelName(renderer);
+      const channel = getChannelName(renderer) || pageChannelName;
       if (!title && !channel) return;
 
       processed.add(renderer);
@@ -244,6 +243,23 @@
     const h3 = el.querySelector('h3');
     if (h3) { const t = h3.textContent.trim(); if (t) return t; }
     return '';
+  }
+
+  // On channel pages, all videos belong to the same channel — get it from the page header
+  function getPageChannelName() {
+    if (!/^\/@|^\/channel\//.test(location.pathname)) return '';
+    // Try DOM selectors (multiple YouTube header layouts)
+    const el = document.querySelector(
+      '#channel-header ytd-channel-name yt-formatted-string, ' +
+      '#page-header yt-dynamic-sizing-formatted-string, ' +
+      'ytd-c4-tabbed-header-renderer #channel-name yt-formatted-string, ' +
+      'yt-page-header-renderer h1, ' +
+      '#page-header h1'
+    );
+    if (el) { const t = el.textContent.trim(); if (t) return t; }
+    // Fallback: extract handle from URL (/@channelname/...)
+    const match = location.pathname.match(/^\/@([^/]+)/);
+    return match ? match[1] : '';
   }
 
   function getChannelName(el) {

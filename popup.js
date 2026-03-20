@@ -5,9 +5,7 @@
   const SPOILER_WORDS = [
     'wins', 'loses', 'winner', 'loser', 'eliminated', 'champion',
     'defeated', 'victory', 'clutch', 'final score', 'playoff',
-    'semifinals', 'finals',
-    'kazand\u0131', 'kaybetti', '\u015fampiyon', 'elendi', 'finale kald\u0131',
-    'yenildi', 'galip'
+    'semifinals', 'finals'
   ];
 
   // DOM refs
