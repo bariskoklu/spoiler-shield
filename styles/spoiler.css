@@ -26,22 +26,26 @@
   border: 1px solid #2a2a4a !important;
   padding: 16px !important;
   visibility: visible !important;
+  transition: background 0.2s ease, border-color 0.2s ease !important;
 }
 
-/* Shield title */
-.ss-overlay-shield {
-  color: #f5c518;
-  font-size: 16px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.ss-overlay:hover {
+  background: #1f1f38 !important;
+  border-color: #3a3a6a !important;
+}
+
+/* Channel + date info (top priority) */
+.ss-overlay-info {
+  color: #e0e0e0;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
 }
 
 /* Censored title */
 .ss-overlay-censored {
-  color: #999;
-  font-size: 13px;
+  color: #888;
+  font-size: 12px;
   text-align: center;
   max-width: 90%;
   line-height: 1.4;
@@ -51,30 +55,36 @@
   -webkit-box-orient: vertical;
 }
 
-/* Channel + date info */
-.ss-overlay-info {
-  color: #777;
-  font-size: 12px;
-  text-align: center;
+/* Shield branding (subtle) */
+.ss-overlay-shield {
+  color: #f5c518;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-/* Show/Hide button */
+/* Show button — bottom-right corner */
 .ss-overlay-btn {
-  background: #f5c518 !important;
-  color: #1a1a2e !important;
-  border: none !important;
-  padding: 6px 20px !important;
-  border-radius: 6px !important;
-  font-size: 12px !important;
+  position: absolute !important;
+  bottom: 8px !important;
+  right: 8px !important;
+  background: rgba(245, 197, 24, 0.15) !important;
+  color: #f5c518 !important;
+  border: 1px solid rgba(245, 197, 24, 0.4) !important;
+  padding: 4px 14px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
-  margin-top: 4px !important;
   font-family: 'YouTube Sans', 'Roboto', Arial, sans-serif !important;
   transition: background 0.2s ease !important;
 }
 
 .ss-overlay-btn:hover {
-  background: #e0b415 !important;
+  background: rgba(245, 197, 24, 0.3) !important;
 }
 
 /* Revealed state: overlay hidden, content visible */

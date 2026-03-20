@@ -4,6 +4,8 @@
 
   const LOG = '[SpoilerShield]';
 
+  // ─── Constants ───
+
   const RENDERERS = [
     'ytd-rich-item-renderer',
     'ytd-video-renderer',
@@ -27,6 +29,8 @@
     'yenildi', 'galip'
   ];
 
+  // ─── State ───
+
   let presetScores = true;
   let presetKeywords = true;
   let keywords = [];
@@ -34,6 +38,23 @@
   let extensionEnabled = true;
   let processed = new WeakSet();
   let scanTimer = null;
+
+  // ─── Init ───
+
+  console.log(LOG, 'Loaded on', location.href);
+
+  function init() {
+    loadSettings();
+    startObservers();
+  }
+
+  if (document.body) {
+    init();
+  } else {
+    new MutationObserver(function check() {
+      if (document.body) { this.disconnect(); init(); }
+    }).observe(document.documentElement, { childList: true });
+  }
 
   // ─── Storage ───
 
@@ -74,6 +95,71 @@
     if (changes.ss_enabled) { extensionEnabled = changes.ss_enabled.newValue; rescan = true; }
     if (rescan) { processed = new WeakSet(); resetAndScan(); }
   });
+
+  // ─── Observers ───
+
+  function startObservers() {
+    new MutationObserver((muts) => {
+      for (const m of muts) { if (m.addedNodes.length) { debouncedScan(); return; } }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+
+    document.addEventListener('yt-navigate-finish', () => {
+      console.log(LOG, 'Navigation detected');
+      processed = new WeakSet();
+      debouncedScan();
+    });
+
+    window.addEventListener('popstate', () => { processed = new WeakSet(); debouncedScan(); });
+    setInterval(scanVideos, 3000);
+    console.log(LOG, 'Observers started');
+  }
+
+  // ─── Scanning ───
+
+  function scanVideos() {
+    if (!extensionEnabled) {
+      document.querySelectorAll('.ss-hidden').forEach(revealAll);
+      return;
+    }
+
+    // On watch pages, also scan sidebar lockup view models
+    const isWatch = location.pathname === '/watch';
+    const selector = isWatch ? RENDERERS + ', ' + SIDEBAR_RENDERER : RENDERERS;
+    const renderers = document.querySelectorAll(selector);
+    let count = 0;
+
+    renderers.forEach((renderer) => {
+      if (processed.has(renderer)) return;
+
+      const title = getTitle(renderer);
+      const channel = getChannelName(renderer);
+      if (!title && !channel) return;
+
+      processed.add(renderer);
+
+      const titleMatch = title && matchesTitle(title);
+      const channelMatch = matchesChannel(channel);
+
+      if (titleMatch || channelMatch) {
+        const date = getDateText(renderer);
+        hideVideo(renderer, title, channel, date, channelMatch && !titleMatch);
+        count++;
+      }
+    });
+
+    if (count > 0) console.log(LOG, 'Hidden', count, 'videos');
+  }
+
+  function debouncedScan() {
+    if (scanTimer) clearTimeout(scanTimer);
+    scanTimer = setTimeout(scanVideos, 80);
+  }
+
+  function resetAndScan() {
+    document.querySelectorAll('.ss-hidden').forEach(revealAll);
+    processed = new WeakSet();
+    scanVideos();
+  }
 
   // ─── Matching ───
 
@@ -145,7 +231,8 @@
   function getTitle(el) {
     const vt = el.querySelector('#video-title');
     if (vt) { const t = vt.textContent.trim(); if (t) return t; }
-    const lockup = el.querySelector('a[class*="lockup-metadata-view-model_title"]');
+    // Lockup title (homepage + watch sidebar) — match both __ and _ variants
+    const lockup = el.querySelector('a[class*="lockup-metadata-view-model"][class*="title"]');
     if (lockup) {
       const a = lockup.getAttribute('aria-label');
       if (a) return a.trim();
@@ -174,19 +261,39 @@
     }
     const link = el.querySelector('a[href^="/@"], a[href^="/channel/"]');
     if (link) { const t = link.textContent.trim(); if (t && t.length < 100) return t; }
+    // Watch sidebar: first metadata row contains channel name
+    const metaRow = el.querySelector('.yt-content-metadata-view-model__metadata-row');
+    if (metaRow) {
+      const s = metaRow.querySelector('span.yt-core-attributed-string');
+      if (s) {
+        // Get only the direct text, not nested badge/icon spans
+        let name = '';
+        for (const node of s.childNodes) {
+          if (node.nodeType === Node.TEXT_NODE) name += node.textContent;
+        }
+        name = name.trim();
+        if (name && name.length < 100) return name;
+      }
+    }
     return '';
   }
 
   function getDateText(el) {
     const spans = el.querySelectorAll(
       '#metadata-line span, .inline-metadata-item, #metadata span, ' +
-      '.ytd-video-meta-block span, [class*="lockup-metadata-view-model"] span'
+      '.ytd-video-meta-block span, [class*="lockup-metadata-view-model"] span, ' +
+      '.yt-content-metadata-view-model__metadata-text'
     );
     for (const s of spans) {
       const t = s.textContent.trim();
       if (/\u00f6nce|ago|yay\u0131n|stream|premiered/i.test(t)) return t;
     }
     return '';
+  }
+
+  function getVideoUrl(el) {
+    const link = el.querySelector('a#video-title-link, a#video-title, a[href*="/watch?v="]');
+    return link ? link.href : '';
   }
 
   // ─── Hide / Reveal ───
@@ -196,32 +303,39 @@
 
     renderer.classList.add('ss-hidden');
 
+    const videoUrl = getVideoUrl(renderer);
+
     const overlay = document.createElement('div');
     overlay.className = 'ss-overlay';
+    if (videoUrl) overlay.style.cursor = 'pointer';
 
-    const shield = document.createElement('div');
-    shield.className = 'ss-overlay-shield';
-    shield.textContent = '\uD83D\uDEE1\uFE0F Spoiler Shield';
-    overlay.appendChild(shield);
+    // Clicking anywhere on overlay (except Show button) navigates to the video
+    overlay.addEventListener('click', (e) => {
+      if (e.target.closest('.ss-overlay-btn')) return;
+      if (videoUrl) window.location.href = videoUrl;
+    });
 
-    if (isChannelBlock) {
+    // Channel name + date first (top priority)
+    if (channelName || dateText) {
       const info = document.createElement('div');
       info.className = 'ss-overlay-info';
-      info.textContent = (channelName || 'Blocked channel') + (dateText ? ' \u2022 ' + dateText : '');
+      info.textContent = [channelName, dateText].filter(Boolean).join(' \u2022 ');
       overlay.appendChild(info);
-    } else {
+    }
+
+    // Censored title for keyword/score matches
+    if (!isChannelBlock && title) {
       const censored = document.createElement('div');
       censored.className = 'ss-overlay-censored';
       censored.textContent = censorTitle(title);
       overlay.appendChild(censored);
-
-      if (channelName || dateText) {
-        const info = document.createElement('div');
-        info.className = 'ss-overlay-info';
-        info.textContent = [channelName, dateText].filter(Boolean).join(' \u2022 ');
-        overlay.appendChild(info);
-      }
     }
+
+    // Shield branding (small, at bottom)
+    const shield = document.createElement('div');
+    shield.className = 'ss-overlay-shield';
+    shield.textContent = '\uD83D\uDEE1\uFE0F Spoiler Shield';
+    overlay.appendChild(shield);
 
     const showBtn = document.createElement('button');
     showBtn.className = 'ss-overlay-btn';
@@ -258,87 +372,5 @@
     if (overlay) overlay.remove();
     const rehide = renderer.querySelector('.ss-rehide-btn');
     if (rehide) rehide.remove();
-  }
-
-  // ─── Scanning ───
-
-  function scanVideos() {
-    if (!extensionEnabled) {
-      document.querySelectorAll('.ss-hidden').forEach(revealAll);
-      return;
-    }
-
-    // On watch pages, also scan sidebar lockup view models
-    const isWatch = location.pathname === '/watch';
-    const selector = isWatch ? RENDERERS + ', ' + SIDEBAR_RENDERER : RENDERERS;
-    const renderers = document.querySelectorAll(selector);
-    let count = 0;
-
-    renderers.forEach((renderer) => {
-      if (processed.has(renderer)) return;
-
-      const title = getTitle(renderer);
-      const channel = getChannelName(renderer);
-      if (!title && !channel) return;
-
-      processed.add(renderer);
-
-      const titleMatch = title && matchesTitle(title);
-      const channelMatch = matchesChannel(channel);
-
-      if (titleMatch || channelMatch) {
-        const date = getDateText(renderer);
-        hideVideo(renderer, title, channel, date, channelMatch && !titleMatch);
-        count++;
-      }
-    });
-
-    if (count > 0) console.log(LOG, 'Hidden', count, 'videos');
-  }
-
-  function debouncedScan() {
-    if (scanTimer) clearTimeout(scanTimer);
-    scanTimer = setTimeout(scanVideos, 80);
-  }
-
-  function resetAndScan() {
-    document.querySelectorAll('.ss-hidden').forEach(revealAll);
-    processed = new WeakSet();
-    scanVideos();
-  }
-
-  // ─── Observers ───
-
-  function startObservers() {
-    new MutationObserver((muts) => {
-      for (const m of muts) { if (m.addedNodes.length) { debouncedScan(); return; } }
-    }).observe(document.documentElement, { childList: true, subtree: true });
-
-    document.addEventListener('yt-navigate-finish', () => {
-      console.log(LOG, 'Navigation detected');
-      processed = new WeakSet();
-      debouncedScan();
-    });
-
-    window.addEventListener('popstate', () => { processed = new WeakSet(); debouncedScan(); });
-    setInterval(scanVideos, 3000);
-    console.log(LOG, 'Observers started');
-  }
-
-  // ─── Init ───
-
-  console.log(LOG, 'Loaded on', location.href);
-
-  function init() {
-    loadSettings();
-    startObservers();
-  }
-
-  if (document.body) {
-    init();
-  } else {
-    new MutationObserver(function check() {
-      if (document.body) { this.disconnect(); init(); }
-    }).observe(document.documentElement, { childList: true });
   }
 })();
